@@ -39,6 +39,22 @@ body{font-family:'Nunito',sans-serif;background:#f4f4f4;color:#222;font-size:18p
 .cota.livre{background:#f9fafb;border-color:#d1d5db;color:#374151}
 .cota.vendida{background:#fee2e2;border-color:#fca5a5;color:#b91c1c;cursor:not-allowed}
 .cota.escolhida{background:#22c55e;border-color:#16a34a;color:white;transform:scale(1.1);box-shadow:0 3px 12px rgba(22,163,74,.4)}
+/* ADMIN NOVO — seleção laranja + registrar comprador + sidebar (apenas admin) */
+.cota.adminsel{background:#fb923c;border-color:#f97316;color:white;transform:scale(1.08);box-shadow:0 3px 12px rgba(249,115,22,.35)}
+.admin-selbar{display:none;background:#f97316;color:white;padding:12px 16px;font-weight:900;font-size:0.95rem;position:sticky;top:52px;z-index:41;align-items:center;justify-content:space-between;gap:10px}
+.admin-selbar.show{display:flex}
+.btn-registrar{background:white;color:#9a3412;border:none;border-radius:10px;padding:10px 14px;font-size:0.95rem;font-weight:900;cursor:pointer;font-family:'Nunito',sans-serif;white-space:nowrap}
+.sidebar-toggle{position:fixed;right:10px;top:50%;transform:translateY(-50%);background:#22c55e;color:white;border:none;border-radius:999px;padding:12px 14px;font-weight:900;cursor:pointer;z-index:60;box-shadow:0 6px 24px rgba(0,0,0,.18);display:none;}
+.sidebar{position:fixed;top:0;right:0;height:100%;width:min(360px,92vw);background:white;box-shadow:-8px 0 30px rgba(0,0,0,.2);transform:translateX(105%);transition:transform .25s ease;z-index:80;display:flex;flex-direction:column}
+.sidebar.show{transform:translateX(0)}
+.sidebar-h{padding:16px;border-bottom:1px solid #eef2f7;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sidebar-h h3{font-size:1.1rem;font-weight:900;color:#15803d}
+.sidebar-x{background:none;border:2px solid #e5e7eb;border-radius:10px;padding:8px 12px;font-weight:900;cursor:pointer;font-family:'Nunito',sans-serif}
+.sidebar-b{padding:14px 16px;overflow:auto}
+.comp{border:2px solid #f0fdf4;background:#f8fafc;border-radius:14px;padding:12px 12px;margin-bottom:10px}
+.comp-nome{font-weight:900;color:#14532d;margin-bottom:6px}
+.comp-nums{font-weight:800;color:#334155;font-size:0.95rem;line-height:1.5}
+
 /* ADMIN — engrenagem maior e visível */
 .admin-zona{margin-top:20px;text-align:center;border-top:1px solid #f3f4f6;padding-top:16px}
 .btn-admin{background:none;border:2px solid #e5e7eb;border-radius:12px;padding:10px 22px;color:#9ca3af;font-size:1.3rem;font-family:'Nunito',sans-serif;cursor:pointer}
@@ -102,6 +118,23 @@ footer strong{color:white}
   <span>✏️ Modo edição ativo<br><small style="font-weight:600;opacity:0.85">Toque num número para bloquear ou liberar</small></span>
   <button class="btn-salvar" onclick="salvarAlteracoes()">💾 Salvar</button>
 </div>
+
+<div class="admin-selbar" id="adminSelBar">
+  <span>🟧 Selecionados: <span id="adminSelCount">0</span><br><small style="font-weight:700;opacity:0.9" id="adminSelNums"></small></span>
+  <button class="btn-registrar" onclick="registrarComprador()">👤 Registrar comprador</button>
+</div>
+
+<button class="sidebar-toggle" id="sidebarBtn" style="display:none" onclick="toggleSidebar()">📋 COMPRADORES</button>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-h">
+    <h3>📋 Compradores</h3>
+    <button class="sidebar-x" onclick="toggleSidebar(false)">✕ Fechar</button>
+  </div>
+  <div class="sidebar-b" id="sidebarBody">
+    <p style="color:#64748b;font-weight:800">Carregando…</p>
+  </div>
+</div>
+
 <div class="salvando" id="salvando">
   <div class="salvando-box">
     <div class="s-icone" id="sIcone">⏳</div>
@@ -258,22 +291,108 @@ footer strong{color:white}
 </footer>
 
 <script>
-const FB='https://rifa-junior-4941a-default-rtdb.firebaseio.com/rifa3/vendidos.json';
+const FB_BASE='https://rifa-junior-4941a-default-rtdb.firebaseio.com/rifa3';
+const FB_VENDIDOS=FB_BASE+'/vendidos.json';
+const FB_COMPRADORES=FB_BASE+'/compradores.json';
 const TOTAL=200,VALOR=10;
 const PIX='16997797319',WPP='5516997797319';
 const SENHA='junior2026';
-let vendidos=new Set(),escolhidos=[],adminAtivo=false;
-
+let vendidos=new Set(),escolhidos=[],adminAtivo=false,adminSel=[];
+let compradoresPorNumero={};
 function pad(n){return String(n).padStart(3,'0')}
+
+
+function toggleSidebar(force){
+  if(!adminAtivo) return; // sidebar só no admin
+  const sb=document.getElementById('sidebar');
+  const show = (typeof force==='boolean') ? force : !sb.classList.contains('show');
+  sb.classList.toggle('show', show);
+}
+
+function atualizarSidebar(){
+  const box=document.getElementById('sidebarBody');
+  if(!box) return;
+
+  const grupos = {};
+  for(const k in compradoresPorNumero){
+    const nome = String(compradoresPorNumero[k]||'').trim();
+    const num = Number(k);
+    if(!nome || !Number.isFinite(num)) continue;
+    (grupos[nome] ||= []).push(num);
+  }
+
+  const nomes = Object.keys(grupos).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  if(nomes.length===0){
+    box.innerHTML='<p style="color:#64748b;font-weight:800">Ainda não há compradores registrados.</p>';
+    return;
+  }
+
+  box.innerHTML = nomes.map(nome=>{
+    const nums = grupos[nome].sort((a,b)=>a-b).map(pad).join(', ');
+    return '<div class="comp"><div class="comp-nome">👤 '+escapeHtml(nome)+'</div><div class="comp-nums">🎟️ '+nums+'</div></div>';
+  }).join('');
+}
+
+function atualizarAdminSelBar(){
+  const bar=document.getElementById('adminSelBar');
+  if(!bar) return;
+  if(adminAtivo && adminSel.length>0){
+    bar.classList.add('show');
+    document.getElementById('adminSelCount').textContent=String(adminSel.length);
+    document.getElementById('adminSelNums').textContent=adminSel.slice().sort((a,b)=>a-b).map(pad).join(', ');
+  }else{
+    bar.classList.remove('show');
+  }
+}
+
+function registrarComprador(){
+  if(!adminAtivo) return;
+  if(adminSel.length===0){
+    alert('Selecione um ou mais números livres (laranja) antes de registrar o comprador.');
+    return;
+  }
+  const nome = prompt('Nome do comprador (digite uma vez):');
+  if(nome===null) return;
+  const n = nome.trim();
+  if(!n){
+    alert('Nome inválido.');
+    return;
+  }
+
+  adminSel.forEach(num=>{
+    vendidos.add(num);
+    compradoresPorNumero[String(num)] = n;
+  });
+
+  adminSel = [];
+  buildGrid();
+  atualizarSidebar();
+  atualizarAdminSelBar();
+  atualizar();
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, s=>({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[s]));
+}
+
 
 async function carregarCotas(){
   try{
-    const r=await fetch(FB);
-    if(!r.ok)throw new Error();
-    const d=await r.json();
-    vendidos=new Set(Array.isArray(d)?d:[]);
-  }catch(e){vendidos=new Set([]);}
+    const [rv, rc] = await Promise.all([fetch(FB_VENDIDOS), fetch(FB_COMPRADORES)]);
+    let dv=null, dc=null;
+    if(rv.ok) dv = await rv.json();
+    if(rc.ok) dc = await rc.json();
+    vendidos = new Set((Array.isArray(dv)?dv:[]).map(x=>Number(x)).filter(x=>Number.isFinite(x)));
+    compradoresPorNumero = (dc && typeof dc==='object') ? dc : {};
+  }catch(e){
+    vendidos=new Set([]);
+    compradoresPorNumero={};
+  }
   buildGrid();
+  atualizarSidebar();
+  atualizar();
 }
 
 function buildGrid(){
@@ -281,7 +400,9 @@ function buildGrid(){
   g.innerHTML='';
   for(let i=1;i<=TOTAL;i++){
     const d=document.createElement('div');
-    d.className='cota '+(vendidos.has(i)?'vendida':'livre');
+    const isVendida = vendidos.has(i);
+    d.className='cota '+(isVendida?'vendida':'livre');
+    if(adminAtivo && !isVendida && adminSel.includes(i)) d.classList.add('adminsel');
     d.textContent=pad(i);
     d.onclick=()=>clicar(i,d);
     g.appendChild(d);
@@ -290,9 +411,24 @@ function buildGrid(){
 
 function clicar(n,el){
   if(adminAtivo){
-    if(vendidos.has(n)){vendidos.delete(n);el.className='cota livre';}
-    else{vendidos.add(n);escolhidos=escolhidos.filter(x=>x!==n);el.className='cota vendida';}
-    atualizar();return;
+    if(vendidos.has(n)){
+      vendidos.delete(n);
+      delete compradoresPorNumero[String(n)];
+      el.className='cota livre';
+      atualizarSidebar();
+      atualizarAdminSelBar();
+      return;
+    }
+    const idx = adminSel.indexOf(n);
+    if(idx===-1){
+      adminSel.push(n);
+      el.classList.add('adminsel');
+    }else{
+      adminSel.splice(idx,1);
+      el.classList.remove('adminsel');
+    }
+    atualizarAdminSelBar();
+    return;
   }
   if(vendidos.has(n))return;
   const idx=escolhidos.indexOf(n);
@@ -317,8 +453,17 @@ function entrarAdmin(){
     adminAtivo=true;
     document.getElementById('painelAdmin').classList.remove('show');
     document.getElementById('avisoAdmin').classList.add('show');
-    escolhidos=[];atualizar();
-  }else{alert('Senha incorreta. Tente novamente.');}
+    const btn=document.getElementById('sidebarBtn');
+    if(btn) btn.style.setProperty('display','inline-flex','important');
+    escolhidos=[];
+    adminSel=[];
+    buildGrid();
+    atualizarSidebar();
+    atualizarAdminSelBar();
+    atualizar();
+  }else{
+    alert('Senha incorreta. Tente novamente.');
+  }
 }
 
 async function salvarAlteracoes(){
@@ -328,23 +473,33 @@ async function salvarAlteracoes(){
   document.getElementById('sSub').textContent='Aguarde um momento';
   elS.classList.add('show');
   try{
-    const r=await fetch(FB,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify([...vendidos])});
-    if(r.ok){
-      document.getElementById('sIcone').textContent='✅';
-      document.getElementById('sMsg').textContent='Salvo com sucesso!';
-      document.getElementById('sSub').textContent='Todos já podem ver os números atualizados';
-      setTimeout(()=>{
-        elS.classList.remove('show');
-        adminAtivo=false;
-        document.getElementById('avisoAdmin').classList.remove('show');
-        atualizar();
-      },2500);
-    }else{throw new Error();}
+    const arr=[...vendidos].sort((a,b)=>a-b);
+    const [pv, pc] = await Promise.all([
+      fetch(FB_VENDIDOS,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(arr)}),
+      fetch(FB_COMPRADORES,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(compradoresPorNumero)})
+    ]);
+    if(!pv.ok || !pc.ok) throw new Error('Falha ao salvar');
+    document.getElementById('sIcone').textContent='✅';
+    document.getElementById('sMsg').textContent='Salvo com sucesso!';
+    document.getElementById('sSub').textContent='Modo edição desativado';
+    setTimeout(()=>{
+      elS.classList.remove('show');
+      adminAtivo=false;
+      adminSel=[];
+      document.getElementById('avisoAdmin').classList.remove('show');
+      document.getElementById('adminSelBar').classList.remove('show');
+      const btn=document.getElementById('sidebarBtn');
+      if(btn) btn.style.setProperty('display','none','important');
+      toggleSidebar(false);
+      buildGrid();
+      atualizarSidebar();
+      atualizar();
+    },900);
   }catch(e){
-    document.getElementById('sIcone').textContent='❌';
-    document.getElementById('sMsg').textContent='Não foi possível salvar';
+    document.getElementById('sIcone').textContent='⚠️';
+    document.getElementById('sMsg').textContent='Erro ao salvar';
     document.getElementById('sSub').textContent='Verifique sua internet e tente novamente';
-    setTimeout(()=>elS.classList.remove('show'),4000);
+    setTimeout(()=>elS.classList.remove('show'),1400);
   }
 }
 
