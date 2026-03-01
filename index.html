@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rifa 3 — Beneficente</title>
+<title>Rifa 2 — Beneficente</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -110,6 +110,15 @@ body{font-family:'Nunito',sans-serif;background:#f4f4f4;color:#222;font-size:18p
 footer{background:#14532d;color:#86efac;text-align:center;padding:22px 20px 100px;font-size:0.9rem}
 footer p{margin-bottom:5px}
 footer strong{color:white}
+
+/* Progresso (gatilho de escassez) */
+.progresso{margin:6px 0 16px;background:#f8fafc;border:2px solid #e2e8f0;border-radius:14px;padding:12px 14px}
+.progresso-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px}
+.progresso-txt{font-weight:900;color:#0f172a;font-size:0.95rem}
+.progresso-num{font-weight:900;color:#15803d;font-size:0.95rem;white-space:nowrap}
+.progresso-bar{height:12px;background:#e5e7eb;border-radius:999px;overflow:hidden}
+.progresso-fill{height:100%;background:#22c55e;border-radius:999px;transition:width .25s ease}
+
 </style>
 </head>
 <body>
@@ -144,14 +153,14 @@ footer strong{color:white}
 </div>
 
 <div class="topo">
-  <div class="badge">RIFA 3</div>
+  <div class="badge">RIFA 2</div>
   <h1>Rifa Beneficente</h1>
   <p>Concorra a um <strong>Cooktop Britânia</strong> zero km e ajude nossa família.</p>
 </div>
 
 <div class="card">
   <div class="titulo">O que aconteceu</div>
-  <p style="font-size:1rem;line-height:1.8;color:#333">Na madrugada de <strong>26 de fevereiro</strong>, meu sobrinho Junior, PM, voltava do serviço pela Rodovia SP-318. Ele trabalha em outra cidade e não há transporte público para o trajeto — o carro é o único meio de ir ao trabalho. No caminho, perdeu o controle, bateu na defensa metálica e capotou. Saiu com ferimentos nos braços e o carro ficou destruído.</p>
+  <p style="font-size:1rem;line-height:1.8;color:#333">Na madrugada de <strong>26 de fevereiro</strong>, meu filho Junior, PM, voltava do serviço pela Rodovia SP-318. Ele trabalha em outra cidade e não há transporte público para o trajeto — o carro é o único meio de ir ao trabalho. No caminho, perdeu o controle, bateu na defensa metálica e capotou. Saiu com ferimentos nos braços e o carro ficou destruído.</p>
 </div>
 
 <div class="card">
@@ -197,7 +206,17 @@ footer strong{color:white}
 
 <div class="card">
   <div class="titulo">Escolha seu número</div>
-  <div class="legenda">
+  
+  <div class="progresso" id="progressoBox">
+    <div class="progresso-top">
+      <span class="progresso-txt" id="progressoTxt">Carregando...</span>
+      <span class="progresso-num" id="progressoNum"></span>
+    </div>
+    <div class="progresso-bar">
+      <div class="progresso-fill" id="progressoFill" style="width:0%"></div>
+    </div>
+  </div>
+<div class="legenda">
     <div class="li"><div class="lc livre"></div>Disponível</div>
     <div class="li"><div class="lc vendida"></div>Vendida</div>
     <div class="li"><div class="lc escolhida"></div>Selecionada</div>
@@ -246,7 +265,7 @@ footer strong{color:white}
 
     <div class="pix-card">
       <div class="pix-label">Chave PIX — Telefone</div>
-      <div class="pix-chave">(16) 99779-7319</div>
+      <div class="pix-chave">(16) 99773-3349</div>
       <div class="pix-nome">Lívia Roberta Oliveira da Silva</div>
       <div class="pix-valor" id="valorBox">R$ 0,00</div>
     </div>
@@ -265,7 +284,7 @@ footer strong{color:white}
       </div>
     </div>
     <div class="campo"><label>Seu nome completo</label><input type="text" id="nome" placeholder="Ex: Maria das Graças" autocomplete="name"></div>
-    <div class="campo"><label>Seu WhatsApp</label><input type="tel" id="fone" placeholder="(16) 99999-9999" autocomplete="tel"></div>
+    <div class="campo"><label>Seu WhatsApp</label><input type="tel" id="fone" placeholder="(16) 99773-3349" autocomplete="tel"></div>
 
     <div class="modal-passo">
       <div class="modal-passo-num">3</div>
@@ -287,20 +306,33 @@ footer strong{color:white}
 <footer>
   <p>Rifa Beneficente — Família do <strong>Junior</strong></p>
   <p>200 cotas · R$ 10,00 cada · Prêmio: Cooktop Britânia</p>
-  <p style="margin-top:5px">Dúvidas? <strong>(16) 99779-7319</strong></p>
+  <p style="margin-top:5px">Dúvidas? <strong>(16) 99773-3349</strong></p>
 </footer>
 
 <script>
-const FB_BASE='https://rifa-junior-4941a-default-rtdb.firebaseio.com/rifa3';
+const FB_BASE='https://rifa-junior-4941a-default-rtdb.firebaseio.com/rifa2';
 const FB_VENDIDOS=FB_BASE+'/vendidos.json';
 const FB_COMPRADORES=FB_BASE+'/compradores.json';
 const TOTAL=200,VALOR=10;
-const PIX='16997797319',WPP='5516997797319';
+const PIX='16997733349',WPP='5516993786996';
 const SENHA='junior2026';
 let vendidos=new Set(),escolhidos=[],adminAtivo=false,adminSel=[];
 let compradoresPorNumero={};
 function pad(n){return String(n).padStart(3,'0')}
 
+
+
+
+function atualizarProgresso(){
+  const vendidosCount = vendidos.size;
+  const pct = Math.round((vendidosCount / TOTAL) * 100);
+  const txt = document.getElementById('progressoTxt');
+  const num = document.getElementById('progressoNum');
+  const fill = document.getElementById('progressoFill');
+  if(txt) txt.textContent = `🔥 ${pct}% dos números já foram vendidos`;
+  if(num) num.textContent = `${vendidosCount}/${TOTAL}`;
+  if(fill) fill.style.width = `${pct}%`;
+}
 
 function toggleSidebar(force){
   if(!adminAtivo) return; // sidebar só no admin
@@ -366,7 +398,8 @@ function registrarComprador(){
 
   adminSel = [];
   buildGrid();
-  atualizarSidebar();
+    atualizarProgresso();
+atualizarSidebar();
   atualizarAdminSelBar();
   atualizar();
 }
@@ -391,6 +424,7 @@ async function carregarCotas(){
     compradoresPorNumero={};
   }
   buildGrid();
+  atualizarProgresso();
   atualizarSidebar();
   atualizar();
 }
