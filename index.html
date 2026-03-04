@@ -33,11 +33,13 @@ body{font-family:'Nunito',sans-serif;background:#f4f4f4;color:#222;font-size:18p
 .lc{width:22px;height:22px;border-radius:5px;flex-shrink:0}
 .lc.livre{background:#f9fafb;border:2px solid #d1d5db}
 .lc.vendida{background:#fca5a5;border:2px solid #f87171}
+.lc.reservada{background:#fef3c7;border:2px solid #f59e0b}
 .lc.escolhida{background:#22c55e;border:2px solid #16a34a}
 .grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:7px}
 .cota{aspect-ratio:1;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;cursor:pointer;border:2px solid transparent;transition:transform .12s;user-select:none;-webkit-tap-highlight-color:transparent}
 .cota.livre{background:#f9fafb;border-color:#d1d5db;color:#374151}
 .cota.vendida{background:#fee2e2;border-color:#fca5a5;color:#b91c1c;cursor:not-allowed}
+.cota.reservada{background:#fef3c7;border-color:#f59e0b;color:#92400e;cursor:not-allowed}
 .cota.escolhida{background:#22c55e;border-color:#16a34a;color:white;transform:scale(1.1);box-shadow:0 3px 12px rgba(22,163,74,.4)}
 /* ADMIN NOVO — seleção laranja + registrar comprador + sidebar (apenas admin) */
 .cota.adminsel{background:#fb923c;border-color:#f97316;color:white;transform:scale(1.08);box-shadow:0 3px 12px rgba(249,115,22,.35)}
@@ -68,6 +70,7 @@ body{font-family:'Nunito',sans-serif;background:#f4f4f4;color:#222;font-size:18p
 .aviso-admin{display:none;background:#ca8a04;color:white;padding:12px 16px;font-weight:800;font-size:0.9rem;position:sticky;top:0;z-index:40;align-items:center;justify-content:space-between;gap:10px}
 .aviso-admin.show{display:flex}
 .btn-salvar{background:white;color:#92400e;border:none;border-radius:10px;padding:10px 18px;font-size:1rem;font-weight:900;cursor:pointer;font-family:'Nunito',sans-serif;white-space:nowrap}
+.btn-sair-admin{background:transparent;color:white;border:2px solid rgba(255,255,255,.65);border-radius:10px;padding:10px 14px;font-size:0.92rem;font-weight:900;cursor:pointer;font-family:'Nunito',sans-serif;white-space:nowrap}
 .salvando{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:200;align-items:center;justify-content:center}
 .salvando.show{display:flex}
 .salvando-box{background:white;border-radius:22px;padding:36px 28px;text-align:center;max-width:290px;width:90%}
@@ -118,6 +121,11 @@ footer strong{color:white}
 .progresso-num{font-weight:900;color:#15803d;font-size:0.95rem;white-space:nowrap}
 .progresso-bar{height:12px;background:#e5e7eb;border-radius:999px;overflow:hidden}
 .progresso-fill{height:100%;background:#22c55e;border-radius:999px;transition:width .25s ease}
+.microaviso{margin:0 0 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;font-size:0.92rem;line-height:1.55;color:#475569}
+.microaviso strong{color:#14532d}
+.sidebar-search{width:100%;border:2px solid #e2e8f0;border-radius:12px;padding:12px 14px;font-size:0.98rem;font-family:'Nunito',sans-serif;margin-bottom:14px}
+.sidebar-search:focus{outline:none;border-color:#22c55e}
+.sidebar-chip{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;background:#f8fafc;border:1px solid #e2e8f0;font-size:0.82rem;font-weight:800;color:#475569}
 
 </style>
 </head>
@@ -125,7 +133,10 @@ footer strong{color:white}
 
 <div class="aviso-admin" id="avisoAdmin">
   <span>✏️ Modo edição ativo<br><small style="font-weight:600;opacity:0.85">Toque num número para bloquear ou liberar</small></span>
-  <button class="btn-salvar" onclick="salvarAlteracoes()">💾 Salvar</button>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+    <button class="btn-salvar" onclick="salvarAlteracoes()">💾 Salvar</button>
+    <button class="btn-sair-admin" onclick="sairAdmin()">Sair</button>
+  </div>
 </div>
 
 <div class="admin-selbar" id="adminSelBar">
@@ -136,7 +147,7 @@ footer strong{color:white}
 <button class="sidebar-toggle" id="sidebarBtn" style="display:none" onclick="toggleSidebar()">📋 COMPRADORES</button>
 <div class="sidebar" id="sidebar">
   <div class="sidebar-h">
-    <h3>📋 Compradores</h3>
+    <h3>📋 Painel da organizadora</h3>
     <button class="sidebar-x" onclick="toggleSidebar(false)">✕ Fechar</button>
   </div>
   <div class="sidebar-b" id="sidebarBody">
@@ -219,8 +230,10 @@ footer strong{color:white}
 <div class="legenda">
     <div class="li"><div class="lc livre"></div>Disponível</div>
     <div class="li"><div class="lc vendida"></div>Vendida</div>
+    <div class="li"><div class="lc reservada"></div>Reservada</div>
     <div class="li"><div class="lc escolhida"></div>Selecionada</div>
   </div>
+  <div class="microaviso"><strong>Dica rápida:</strong> amarelo significa aguardando comprovante. Selecione seus números e toque em <strong>Pagar PIX</strong>.</div>
   <div class="grade" id="grade">
     <div style="grid-column:1/-1;text-align:center;padding:30px;color:#9ca3af">Carregando...</div>
   </div>
@@ -284,7 +297,7 @@ footer strong{color:white}
       </div>
     </div>
     <div class="campo"><label>Seu nome completo</label><input type="text" id="nome" placeholder="Ex: Maria das Graças" autocomplete="name"></div>
-    <div class="campo"><label>Seu WhatsApp</label><input type="tel" id="fone" placeholder="(16) 99773-3349" autocomplete="tel"></div>
+    <div class="campo"><label>Seu WhatsApp</label><input type="tel" id="fone" placeholder="(16) 99779-7319" autocomplete="tel"></div>
 
     <div class="modal-passo">
       <div class="modal-passo-num">3</div>
@@ -306,10 +319,10 @@ footer strong{color:white}
 <footer>
   <p>Rifa Beneficente — Família do <strong>Junior</strong></p>
   <p>200 cotas · R$ 10,00 cada · Prêmio: Cooktop Britânia</p>
-  <p style="margin-top:5px">Dúvidas? <strong>(16) 99773-3349</strong></p>
+  <p style="margin-top:5px">Dúvidas? <strong>(16) 99779-7319</strong></p>
 </footer>
 
-<script>
+<script type="text/plain" id="legacyScriptRifa3">
 const FB_BASE='https://rifa-junior-4941a-default-rtdb.firebaseio.com/rifa2';
 const FB_VENDIDOS=FB_BASE+'/vendidos.json';
 const FB_COMPRADORES=FB_BASE+'/compradores.json';
@@ -581,6 +594,725 @@ function prepararWpp(e){
 document.getElementById('overlay').addEventListener('click',function(e){if(e.target===this)fecharModal();});
 carregarCotas();
 setInterval(()=>{if(!adminAtivo)carregarCotas();},30000);
+</script>
+<script>
+const FB_BASE = 'https://rifa-junior-4941a-default-rtdb.firebaseio.com';
+const RIFA_ROOT = 'rifa3';
+const RIFA_LABEL = 'Rifa 3';
+const FB_VENDIDOS = `${FB_BASE}/${RIFA_ROOT}/vendidos.json`;
+const FB_COMPRADORES = `${FB_BASE}/${RIFA_ROOT}/compradores.json`;
+const FB_RESERVAS = `${FB_BASE}/${RIFA_ROOT}/reservas.json`;
+
+const TOTAL = 200;
+const VALOR = 10;
+const PIX = '16997733349';
+const WPP = '5516997797319';
+const SENHA = 'junior2026';
+const ADMIN_SESSION_KEY = `admin-session-${RIFA_ROOT}`;
+const COMPRADOR_DRAFT_KEY = `comprador-draft-${RIFA_ROOT}`;
+const ADMIN_SESSION_TTL = 12 * 60 * 60 * 1000;
+
+let vendidosSet = new Set();
+let compradoresPorNumero = {};
+let reservasPorNumero = {};
+let escolhidosSet = new Set();
+let adminSelSet = new Set();
+let adminAtivo = false;
+let sidebarFiltro = '';
+
+const byId = (id) => document.getElementById(id);
+
+function pad(n){ return String(n).padStart(3, '0'); }
+function onlyDigits(value){ return String(value || '').replace(/\D+/g, ''); }
+function normalizeNumero(value){
+  const digits = onlyDigits(value);
+  if(!digits) return null;
+  const num = Number(digits);
+  if(!Number.isInteger(num) || num < 1 || num > TOTAL) return null;
+  return pad(num);
+}
+function normalizeVendidosList(list){
+  if(!Array.isArray(list)) return new Set();
+  const normalized = new Set();
+  for(const item of list){
+    const num = normalizeNumero(item);
+    if(num) normalized.add(num);
+  }
+  return normalized;
+}
+function normalizeCompradoresMap(map){
+  if(!map || typeof map !== 'object') return {};
+  const normalized = {};
+  for(const [key, value] of Object.entries(map)){
+    const num = normalizeNumero(key);
+    if(!num) continue;
+    normalized[num] = typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+  }
+  return normalized;
+}
+function normalizeReservasMap(map){
+  if(!map || typeof map !== 'object') return {};
+  const normalized = {};
+  for(const [key, value] of Object.entries(map)){
+    const num = normalizeNumero(key);
+    if(!num || !value || typeof value !== 'object') continue;
+    normalized[num] = {
+      nome: String(value.nome || '').trim(),
+      fone: String(value.fone || '').trim(),
+      status: 'reservada',
+      ts: Number(value.ts) || Date.now()
+    };
+  }
+  return normalized;
+}
+function escapeHtml(str){
+  return String(str ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+function sortNums(arr){
+  return [...arr].sort((a, b) => Number(a) - Number(b));
+}
+function getCompradorNome(num){
+  const nome = compradoresPorNumero[num];
+  return typeof nome === 'string' ? nome.trim() : '';
+}
+function saveAdminSession(){
+  try{
+    localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({ expiresAt: Date.now() + ADMIN_SESSION_TTL }));
+  }catch(_err){}
+}
+function clearAdminSession(){
+  try{
+    localStorage.removeItem(ADMIN_SESSION_KEY);
+  }catch(_err){}
+}
+function hasValidAdminSession(){
+  try{
+    const raw = localStorage.getItem(ADMIN_SESSION_KEY);
+    if(!raw) return false;
+    const parsed = JSON.parse(raw);
+    if(!parsed || typeof parsed.expiresAt !== 'number') return false;
+    if(parsed.expiresAt < Date.now()){
+      localStorage.removeItem(ADMIN_SESSION_KEY);
+      return false;
+    }
+    return true;
+  }catch(_err){
+    return false;
+  }
+}
+function saveCompradorDraft(){
+  const nome = (byId('nome')?.value || '').trim();
+  const fone = (byId('fone')?.value || '').trim();
+  try{
+    localStorage.setItem(COMPRADOR_DRAFT_KEY, JSON.stringify({ nome, fone }));
+  }catch(_err){}
+}
+function restoreCompradorDraft(){
+  try{
+    const raw = localStorage.getItem(COMPRADOR_DRAFT_KEY);
+    if(!raw) return;
+    const parsed = JSON.parse(raw);
+    if(byId('nome') && typeof parsed?.nome === 'string') byId('nome').value = parsed.nome;
+    if(byId('fone') && typeof parsed?.fone === 'string') byId('fone').value = parsed.fone;
+  }catch(_err){}
+}
+function bindCompradorDraft(){
+  const nome = byId('nome');
+  const fone = byId('fone');
+  if(nome) nome.addEventListener('input', saveCompradorDraft);
+  if(fone) fone.addEventListener('input', saveCompradorDraft);
+}
+function ensureSidebarSearchBinding(){
+  const input = byId('sidebarSearch');
+  if(!input || input.dataset.bound === '1') return;
+  input.dataset.bound = '1';
+  input.addEventListener('input', (event) => {
+    sidebarFiltro = String(event.target.value || '').trim().toLowerCase();
+    renderSidebar();
+  });
+}
+function setAdminMode(active){
+  const aviso = byId('avisoAdmin');
+  const sidebarBtn = byId('sidebarBtn');
+  const painel = byId('painelAdmin');
+
+  adminAtivo = active;
+  if(!active) adminSelSet.clear();
+  if(painel && active) painel.style.display = 'none';
+  if(aviso) aviso.classList.toggle('show', active);
+  if(sidebarBtn) sidebarBtn.style.display = active ? 'block' : 'none';
+  atualizarAdminSelUI();
+  renderGrade();
+  renderSidebar();
+}
+function showSaving(msg='Salvando...', sub='Aguarde um momento', icon='⏳'){
+  const box = byId('salvando');
+  const msgEl = byId('sMsg');
+  const subEl = byId('sSub');
+  const iconEl = byId('sIcone');
+  if(!box || !msgEl || !subEl || !iconEl) return;
+  msgEl.textContent = msg;
+  subEl.textContent = sub;
+  iconEl.textContent = icon;
+  box.classList.add('show');
+}
+function hideSaving(){
+  const box = byId('salvando');
+  if(box) box.classList.remove('show');
+}
+function showSaved(msg='Salvo com sucesso!'){
+  showSaving(msg, 'Tudo certo ✅', '✅');
+  setTimeout(hideSaving, 900);
+}
+function showCopiedPixMessage(){
+  const msg = byId('copiadoPix');
+  if(!msg) return;
+  msg.classList.add('show');
+  setTimeout(() => msg.classList.remove('show'), 2200);
+}
+
+async function fbGet(url){
+  const response = await fetch(url, { method: 'GET' });
+  if(!response.ok) throw new Error(`GET falhou: ${response.status}`);
+  return response.json();
+}
+async function fbPut(url, data){
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if(!response.ok) throw new Error(`PUT falhou: ${response.status}`);
+}
+async function fbDelete(url){
+  const response = await fetch(url, { method: 'DELETE' });
+  if(!response.ok) throw new Error(`DELETE falhou: ${response.status}`);
+}
+async function writeComprador(num, nome){
+  await fbPut(`${FB_BASE}/${RIFA_ROOT}/compradores/${num}.json`, nome);
+}
+async function deleteComprador(num){
+  await fbDelete(`${FB_BASE}/${RIFA_ROOT}/compradores/${num}.json`);
+}
+async function writeReserva(num, payload){
+  await fbPut(`${FB_BASE}/${RIFA_ROOT}/reservas/${num}.json`, payload);
+}
+async function deleteReserva(num){
+  await fbDelete(`${FB_BASE}/${RIFA_ROOT}/reservas/${num}.json`);
+}
+
+async function carregarCotas(){
+  try{
+    const [vendidos, compradores, reservas] = await Promise.all([
+      fbGet(FB_VENDIDOS),
+      fbGet(FB_COMPRADORES),
+      fbGet(FB_RESERVAS)
+    ]);
+
+    vendidosSet = normalizeVendidosList(vendidos);
+    compradoresPorNumero = normalizeCompradoresMap(compradores);
+    reservasPorNumero = normalizeReservasMap(reservas);
+
+    renderGrade();
+    atualizarBarraSelecao();
+    atualizarProgresso();
+    renderSidebar();
+  }catch(err){
+    console.error(err);
+    const grade = byId('grade');
+    if(grade){
+      grade.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:#ef4444;font-weight:800">Erro ao carregar. Abra o Console (F12) para detalhes.</div>';
+    }
+  }
+}
+
+function renderGrade(){
+  const grade = byId('grade');
+  if(!grade) return;
+  grade.innerHTML = '';
+
+  for(let i = 1; i <= TOTAL; i += 1){
+    const num = pad(i);
+    const el = document.createElement('div');
+    el.className = 'cota';
+
+    if(vendidosSet.has(num)) el.classList.add('vendida');
+    else if(reservasPorNumero[num]) el.classList.add('reservada');
+    else el.classList.add('livre');
+
+    if(!adminAtivo && escolhidosSet.has(num)) el.classList.add('escolhida');
+    if(adminAtivo && adminSelSet.has(num)) el.classList.add('adminsel');
+
+    el.textContent = num;
+    el.addEventListener('click', () => onCotaClick(num));
+    grade.appendChild(el);
+  }
+}
+
+function onCotaClick(num){
+  if(adminAtivo){
+    if(reservasPorNumero[num]){
+      toggleSidebar(true);
+      return;
+    }
+    if(adminSelSet.has(num)) adminSelSet.delete(num);
+    else adminSelSet.add(num);
+    atualizarAdminSelUI();
+    renderGrade();
+    return;
+  }
+
+  if(vendidosSet.has(num) || reservasPorNumero[num]) return;
+
+  if(escolhidosSet.has(num)) escolhidosSet.delete(num);
+  else escolhidosSet.add(num);
+
+  atualizarBarraSelecao();
+  renderGrade();
+}
+
+function atualizarBarraSelecao(){
+  const nums = sortNums(Array.from(escolhidosSet));
+  const barra = byId('barra');
+  const bNums = byId('bNums');
+  const bTotal = byId('bTotal');
+
+  if(bNums) bNums.textContent = nums.length ? nums.join(', ') : '—';
+  if(bTotal) bTotal.textContent = `R$ ${nums.length * VALOR}`;
+  if(barra) barra.classList.toggle('show', nums.length > 0);
+}
+
+function atualizarProgresso(){
+  const vendidos = vendidosSet.size;
+  const reservados = Object.keys(reservasPorNumero).length;
+  const totalOcupado = vendidos + reservados;
+  const perc = Math.min(100, (totalOcupado / TOTAL) * 100);
+
+  const fill = byId('progressoFill');
+  const txt = byId('progressoTxt');
+  const num = byId('progressoNum');
+
+  if(fill) fill.style.width = `${perc}%`;
+  if(txt) txt.textContent = `${totalOcupado} / ${TOTAL} (vendidos + reservados)`;
+  if(num) num.textContent = `${Math.round(perc)}%`;
+}
+
+function abrirModal(){
+  const overlay = byId('overlay');
+  const resumo = byId('resumo');
+  const valorBox = byId('valorBox');
+  const nums = sortNums(Array.from(escolhidosSet));
+  if(!overlay) return;
+
+  if(resumo){
+    resumo.innerHTML = nums.length
+      ? `<div style="font-weight:900">Números:</div><div style="margin-top:6px">${nums.join(', ')}</div>`
+      : '<div style="color:#ef4444;font-weight:900">Nenhum número selecionado.</div>';
+  }
+  if(valorBox) valorBox.textContent = `R$ ${nums.length * VALOR}`;
+  overlay.classList.add('show');
+}
+
+function fecharModal(){
+  const overlay = byId('overlay');
+  if(overlay) overlay.classList.remove('show');
+}
+
+async function copiarPix(){
+  try{
+    await navigator.clipboard.writeText(PIX);
+    showCopiedPixMessage();
+    showSaved('Chave PIX copiada ✅');
+  }catch(_err){
+    const tmp = document.createElement('textarea');
+    tmp.value = PIX;
+    document.body.appendChild(tmp);
+    tmp.select();
+    document.execCommand('copy');
+    document.body.removeChild(tmp);
+    showCopiedPixMessage();
+    showSaved('Chave PIX copiada ✅');
+  }
+}
+
+async function prepararWpp(event){
+  if(event) event.preventDefault();
+
+  try{
+    const nums = sortNums(Array.from(escolhidosSet));
+    if(nums.length === 0){
+      showSaving('Selecione pelo menos 1 número', 'Depois toque em "Pagar PIX"', '⚠️');
+      setTimeout(hideSaving, 900);
+      return false;
+    }
+
+    const nome = (byId('nome')?.value || '').trim();
+    const foneRaw = (byId('fone')?.value || '').trim();
+    const fone = onlyDigits(foneRaw);
+
+    if(!nome || !fone){
+      showSaving('Preencha nome e WhatsApp', 'No modal do PIX, antes de enviar', '⚠️');
+      setTimeout(hideSaving, 1200);
+      abrirModal();
+      return false;
+    }
+
+    showSaving('Reservando números...', 'Salvando no sistema antes de abrir o WhatsApp', '⏳');
+
+    const reservasAtuais = await fbGet(FB_RESERVAS);
+    const vendidosAtuais = await fbGet(FB_VENDIDOS);
+    const vendidosAtuaisSet = normalizeVendidosList(vendidosAtuais);
+    const reservasAtuaisObj = normalizeReservasMap(reservasAtuais);
+
+    const indisponiveis = nums.filter((num) => vendidosAtuaisSet.has(num) || Boolean(reservasAtuaisObj[num]));
+    if(indisponiveis.length){
+      await carregarCotas();
+      showSaving('Alguns números não estão mais disponíveis', `Indisponíveis: ${indisponiveis.join(', ')}`, '⚠️');
+      setTimeout(hideSaving, 1600);
+      return false;
+    }
+
+    const now = Date.now();
+    saveCompradorDraft();
+
+    for(const num of nums){
+      await writeReserva(num, {
+        nome,
+        fone,
+        status: 'reservada',
+        ts: now
+      });
+      await writeComprador(num, nome);
+      reservasPorNumero[num] = { nome, fone, status: 'reservada', ts: now };
+      compradoresPorNumero[num] = nome;
+      escolhidosSet.delete(num);
+    }
+
+    atualizarBarraSelecao();
+    atualizarProgresso();
+    renderGrade();
+    renderSidebar();
+    hideSaving();
+
+    const msg =
+      `Olá! Enviei o comprovante do PIX da ${RIFA_LABEL}.\n` +
+      `Nome: ${nome}\n` +
+      `WhatsApp: ${foneRaw}\n` +
+      `Números: ${nums.join(', ')}\n\n` +
+      'Obs: meus números ficaram reservados aguardando confirmação.';
+
+    window.location.href = `https://wa.me/${WPP}?text=${encodeURIComponent(msg)}`;
+    return false;
+  }catch(err){
+    console.error(err);
+    showSaving('Erro ao reservar', 'Abra o Console (F12) para ver detalhes', '❌');
+    setTimeout(hideSaving, 1600);
+    return false;
+  }
+}
+
+function toggleAdmin(){
+  const painel = byId('painelAdmin');
+  if(!painel) return;
+  painel.style.display = painel.style.display === 'block' ? 'none' : 'block';
+}
+
+function entrarAdmin(){
+  const senha = (byId('senhaInput')?.value || '').trim();
+  if(senha !== SENHA){
+    showSaving('Senha incorreta', 'Tente novamente', '❌');
+    setTimeout(hideSaving, 900);
+    return;
+  }
+  saveAdminSession();
+  setAdminMode(true);
+  showSaved('Acesso liberado neste aparelho ✅');
+}
+
+function sairAdmin(){
+  clearAdminSession();
+  setAdminMode(false);
+  toggleSidebar(false);
+}
+
+function atualizarAdminSelUI(){
+  const bar = byId('adminSelBar');
+  const count = byId('adminSelCount');
+  const nums = byId('adminSelNums');
+  const arr = sortNums(Array.from(adminSelSet));
+
+  if(count) count.textContent = String(arr.length);
+  if(nums) nums.textContent = arr.length ? arr.join(', ') : '';
+  if(bar) bar.classList.toggle('show', adminAtivo && arr.length > 0);
+}
+
+async function salvarAlteracoes(){
+  if(!adminAtivo){
+    toggleAdmin();
+    return;
+  }
+
+  const selecionados = sortNums(Array.from(adminSelSet));
+  if(selecionados.length === 0){
+    showSaving('Nenhum número selecionado', 'Toque nos números laranja para editar', '⚠️');
+    setTimeout(hideSaving, 1200);
+    return;
+  }
+
+  try{
+    showSaving('Salvando...', 'Atualizando vendidos', '⏳');
+    const vendidosAtual = normalizeVendidosList(await fbGet(FB_VENDIDOS));
+
+    for(const num of selecionados){
+      if(vendidosAtual.has(num)) vendidosAtual.delete(num);
+      else vendidosAtual.add(num);
+    }
+
+    await fbPut(FB_VENDIDOS, sortNums(Array.from(vendidosAtual)));
+
+    for(const num of selecionados){
+      if(vendidosAtual.has(num)){
+        const nome = getCompradorNome(num);
+        if(nome) await writeComprador(num, nome);
+      }else{
+        await deleteComprador(num);
+        delete compradoresPorNumero[num];
+      }
+    }
+
+    vendidosSet = vendidosAtual;
+    adminSelSet.clear();
+    atualizarAdminSelUI();
+    renderGrade();
+    renderSidebar();
+    showSaved('Salvo com sucesso!');
+  }catch(err){
+    console.error(err);
+    showSaving('Erro ao salvar', 'Abra o Console (F12) para detalhes', '❌');
+    setTimeout(hideSaving, 1400);
+    return;
+  }
+
+  setTimeout(() => {
+    sairAdmin();
+    carregarCotas();
+  }, 400);
+}
+
+function registrarComprador(){
+  if(!adminAtivo || adminSelSet.size === 0){
+    showSaving('Selecione números no admin', 'Toque nos números laranja e depois registre', '⚠️');
+    setTimeout(hideSaving, 1200);
+    return;
+  }
+
+  const nome = window.prompt('Nome do comprador:');
+  if(!nome || !nome.trim()) return;
+
+  for(const num of adminSelSet){
+    compradoresPorNumero[num] = nome.trim();
+  }
+
+  showSaved('Comprador vinculado ✅');
+  renderSidebar();
+}
+
+function toggleSidebar(force){
+  const sidebar = byId('sidebar');
+  if(!sidebar) return;
+  const show = typeof force === 'boolean' ? force : !sidebar.classList.contains('show');
+  sidebar.classList.toggle('show', show);
+  if(show) ensureSidebarSearchBinding();
+}
+
+function renderSidebar(){
+  const body = byId('sidebarBody');
+  if(!body) return;
+
+  const hadSearchFocus = document.activeElement?.id === 'sidebarSearch';
+  const previousSearch = hadSearchFocus ? document.activeElement : null;
+  const previousStart = previousSearch && typeof previousSearch.selectionStart === 'number' ? previousSearch.selectionStart : null;
+  const previousEnd = previousSearch && typeof previousSearch.selectionEnd === 'number' ? previousSearch.selectionEnd : null;
+
+  const grupos = new Map();
+  for(const [num, reserva] of Object.entries(reservasPorNumero || {})){
+    const nome = (reserva?.nome || '').trim() || 'Sem nome';
+    const fone = (reserva?.fone || '').trim() || '';
+    const key = `${nome}||${fone}`;
+    if(!grupos.has(key)) grupos.set(key, { nome, fone, nums: [] });
+    grupos.get(key).nums.push(num);
+  }
+
+  const vendidosPorComprador = new Map();
+  for(const num of vendidosSet){
+    const nome = getCompradorNome(num);
+    if(!nome) continue;
+    if(!vendidosPorComprador.has(nome)) vendidosPorComprador.set(nome, []);
+    vendidosPorComprador.get(nome).push(num);
+  }
+
+  let html = `<input class="sidebar-search" id="sidebarSearch" type="search" placeholder="Buscar por nome ou número" value="${escapeHtml(sidebarFiltro)}">`;
+  html += '<div style="margin-bottom:16px"><div style="font-weight:900;color:#0f172a;margin-bottom:8px">⏳ Pendências (reservas)</div>';
+
+  if(grupos.size === 0){
+    html += '<div style="color:#64748b;font-weight:800">Nenhuma pendência.</div>';
+  }else{
+    const gruposOrdenados = Array.from(grupos.values())
+      .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+      .filter((grupo) => {
+        if(!sidebarFiltro) return true;
+        const haystack = `${grupo.nome} ${grupo.fone} ${grupo.nums.join(' ')}`.toLowerCase();
+        return haystack.includes(sidebarFiltro);
+      });
+
+    if(gruposOrdenados.length === 0){
+      html += '<div style="color:#64748b;font-weight:800">Nenhuma pendência encontrada para essa busca.</div>';
+    }
+
+    for(const grupo of gruposOrdenados){
+      const nums = sortNums(grupo.nums);
+      const foneFmt = grupo.fone ? ` <span style="color:#64748b;font-weight:800">(${escapeHtml(grupo.fone)})</span>` : '';
+      html += `<div style="border:2px solid #fde68a;background:#fffbeb;border-radius:12px;padding:12px;margin-bottom:10px">
+        <div style="font-weight:900;color:#92400e;margin-bottom:8px">${escapeHtml(grupo.nome)}${foneFmt}</div>
+        <div style="margin-bottom:10px"><span class="sidebar-chip">${nums.length} número${nums.length > 1 ? 's' : ''}</span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+          ${nums.map((n) => `<span style="padding:6px 10px;border-radius:999px;background:#fef3c7;border:1px solid #f59e0b;font-weight:900;color:#92400e">${n}</span>`).join('')}
+        </div>
+        ${adminAtivo
+          ? `<button type="button" style="width:100%;padding:10px 12px;border-radius:10px;border:0;background:#16a34a;color:#fff;font-weight:900;cursor:pointer" onclick="confirmarPendenciaGrupo('${encodeURIComponent(grupo.nome)}','${encodeURIComponent(grupo.fone)}')">✅ Confirmar tudo (${nums.length})</button>`
+          : '<div style="font-weight:800;color:#92400e">Entre no admin para confirmar.</div>'}
+      </div>`;
+    }
+  }
+
+  html += '</div><div><div style="font-weight:900;color:#0f172a;margin:6px 0 8px">📌 Vendidos</div>';
+
+  if(vendidosPorComprador.size === 0){
+    html += '<div style="color:#64748b;font-weight:800">Nenhuma venda registrada.</div>';
+  }else{
+    const entries = Array.from(vendidosPorComprador.entries())
+      .sort((a, b) => a[0].localeCompare(b[0], 'pt-BR'))
+      .filter(([nome, nums]) => {
+        if(!sidebarFiltro) return true;
+        const haystack = `${nome} ${nums.join(' ')}`.toLowerCase();
+        return haystack.includes(sidebarFiltro);
+      });
+
+    if(entries.length === 0){
+      html += '<div style="color:#64748b;font-weight:800">Nenhum vendido encontrado para essa busca.</div>';
+    }
+
+    for(const [nome, nums] of entries){
+      html += `<div style="border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;margin-bottom:8px;background:#fff">
+        <div style="font-weight:900">${escapeHtml(nome)}</div>
+        <div style="color:#64748b;font-weight:800;margin-top:4px">${escapeHtml(sortNums(nums).join(', '))}</div>
+      </div>`;
+    }
+  }
+
+  html += '</div>';
+  body.innerHTML = html;
+  ensureSidebarSearchBinding();
+
+  if(hadSearchFocus){
+    const input = byId('sidebarSearch');
+    if(input){
+      input.focus();
+      if(previousStart !== null && previousEnd !== null) input.setSelectionRange(previousStart, previousEnd);
+    }
+  }
+}
+
+async function confirmarPendenciaGrupo(nomeEnc, foneEnc){
+  const nome = decodeURIComponent(nomeEnc);
+  const fone = decodeURIComponent(foneEnc);
+
+  try{
+    showSaving('Confirmando...', 'Atualizando reservas e vendidos', '⏳');
+
+    const [reservasAtual, vendidosAtual] = await Promise.all([
+      fbGet(FB_RESERVAS),
+      fbGet(FB_VENDIDOS)
+    ]);
+
+    const reservas = normalizeReservasMap(reservasAtual);
+    const vendidos = normalizeVendidosList(vendidosAtual);
+
+    const nums = sortNums(
+      Object.entries(reservas)
+        .filter(([, reserva]) => (reserva?.nome || '').trim() === nome && String(reserva?.fone || '').trim() === fone)
+        .map(([num]) => num)
+    );
+
+    if(nums.length === 0){
+      hideSaving();
+      await carregarCotas();
+      return;
+    }
+
+    for(const num of nums){
+      vendidos.add(num);
+    }
+
+    await fbPut(FB_VENDIDOS, sortNums(Array.from(vendidos)));
+
+    for(const num of nums){
+      await writeComprador(num, nome);
+      await deleteReserva(num);
+      delete reservas[num];
+      compradoresPorNumero[num] = nome;
+    }
+
+    vendidosSet = vendidos;
+    reservasPorNumero = reservas;
+    renderGrade();
+    atualizarProgresso();
+    renderSidebar();
+    showSaved('Confirmado ✅');
+  }catch(err){
+    console.error(err);
+    showSaving('Erro ao confirmar', 'Abra o Console (F12) para detalhes', '❌');
+    setTimeout(hideSaving, 1500);
+  }
+}
+
+function cancelarConfirma(){ return false; }
+function confirmarReservaRapida(){ return false; }
+function confirmarReservaSidebar(){ return false; }
+
+document.addEventListener('DOMContentLoaded', () => {
+  restoreCompradorDraft();
+  bindCompradorDraft();
+  byId('overlay')?.addEventListener('click', (event) => {
+    if(event.target === byId('overlay')) fecharModal();
+  });
+  if(hasValidAdminSession()) setAdminMode(true);
+  carregarCotas();
+  setInterval(() => {
+    if(!adminAtivo) carregarCotas();
+  }, 20000);
+});
+
+window.abrirModal = abrirModal;
+window.fecharModal = fecharModal;
+window.copiarPix = copiarPix;
+window.prepararWpp = prepararWpp;
+window.toggleAdmin = toggleAdmin;
+window.entrarAdmin = entrarAdmin;
+window.salvarAlteracoes = salvarAlteracoes;
+window.registrarComprador = registrarComprador;
+window.sairAdmin = sairAdmin;
+window.toggleSidebar = toggleSidebar;
+window.confirmarPendenciaGrupo = confirmarPendenciaGrupo;
+window.confirmarPendenciasGrupo = confirmarPendenciaGrupo;
+window.confirmarReservaSidebar = confirmarReservaSidebar;
+window.confirmarReservaRapida = confirmarReservaRapida;
+window.cancelarConfirma = cancelarConfirma;
 </script>
 </body>
 </html>
